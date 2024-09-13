@@ -101,70 +101,97 @@
     <script>
         // 英文键与中文翻译的映射表
         const keyTranslations = {
-            // ...（与之前相同，省略）
-            "entries": "条目",
-            "uid": "唯一标识符",
-            "key": "关键字",
-            "keysecondary": "次要关键字",
-            "comment": "注释",
+            // 角色卡相关
+            "name": "姓名",
+            "description": "描述",
+            "avatar": "头像",
+            "chat": "聊天记录",
+            "talkativeness": "健谈度",
+            "fav": "收藏",
+            "spec": "规格",
+            "spec_version": "规格版本",
+            "data": "数据",
+            "extensions": "扩展",
+            "depth_prompt": "深度提示",
+            "create_date": "创建日期",
+            // 世界观相关
             "content": "内容",
-            "constant": "常量",
-            "vectorized": "向量化",
-            "selective": "选择性",
-            "selectiveLogic": "选择逻辑",
-            "addMemo": "添加备忘录",
-            "order": "顺序",
-            "position": "位置",
-            "disable": "禁用",
-            "excludeRecursion": "排除递归",
-            "preventRecursion": "防止递归",
-            "delayUntilRecursion": "延迟直到递归",
-            "probability": "概率",
-            "useProbability": "使用概率",
-            "depth": "深度",
-            "group": "组",
-            "groupOverride": "组覆盖",
-            "groupWeight": "组权重",
-            "scanDepth": "扫描深度",
-            "caseSensitive": "区分大小写",
-            "matchWholeWords": "匹配整个单词",
-            "useGroupScoring": "使用组评分",
-            "automationId": "自动化ID",
-            "role": "角色",
-            "sticky": "粘性",
-            "cooldown": "冷却",
-            "delay": "延迟",
-            "displayIndex": "显示索引",
-            // ...（根据需要添加更多字段翻译）
+            // 添加更多需要翻译的字段
         };
 
-        // 要忽略的字段列表（这里可以适当减少忽略的字段）
+        // 要忽略的字段列表
         const ignoredFields = [
-            // 根据需要调整忽略的字段
-            // ...（可以为空或者仅包含一些无用的字段）
+            // 可根据需要添加要忽略的字段
+            "extensions",
+            "spec",
+            "spec_version",
+            "fav",
+            "avatar",
+            "chat",
+            "role",
+            "data",
+            "uid",
+            "key",
+            "keysecondary",
+            "constant",
+            "vectorized",
+            "selective",
+            "selectiveLogic",
+            "addMemo",
+            "order",
+            "position",
+            "disable",
+            "excludeRecursion",
+            "preventRecursion",
+            "delayUntilRecursion",
+            "probability",
+            "useProbability",
+            "depth",
+            "group",
+            "groupOverride",
+            "groupWeight",
+            "scanDepth",
+            "caseSensitive",
+            "matchWholeWords",
+            "useGroupScoring",
+            "automationId",
+            "sticky",
+            "cooldown",
+            "delay",
+            "displayIndex"
         ];
 
-        function showResult(content) {
+        function showResult(content, isWorldview = false) {
             const resultDiv = document.getElementById('result');
             resultDiv.innerHTML = '';
 
-            const displayedFields = new Set(); // 确保每次解析都是新的集合
+            const displayedFields = new Set();
 
-            const formattedContent = formatContent(content, 0, displayedFields);
+            const formattedContent = formatContent(content, 0, displayedFields, isWorldview);
             resultDiv.appendChild(formattedContent);
         }
 
-        function formatContent(content, depth, displayedFields) {
+        function formatContent(content, depth, displayedFields, isWorldview) {
             if (Array.isArray(content)) {
                 const container = document.createElement('div');
                 content.forEach((item, index) => {
-                    const valueElement = formatContent(item, depth + 1, displayedFields);
+                    const valueElement = formatContent(item, depth + 1, displayedFields, isWorldview);
                     if (valueElement) {
+                        container.appendChild(valueElement);
+                    }
+                });
+                return container;
+            } else if (typeof content === 'object' && content !== null) {
+                const container = document.createElement('div');
+
+                // 在世界观识别中，如果只需要显示 "content" 字段的内容
+                if (isWorldview) {
+                    if ('content' in content) {
                         const itemDiv = document.createElement('div');
                         itemDiv.className = 'result-item';
 
                         const title = document.createElement('h2');
-                        title.textContent = `项目 ${index + 1}`;
+                        title.textContent = keyTranslations['content'] || 'content';
                         title.addEventListener('click', function() {
                             contentDiv.classList.toggle('collapsed');
                         });
@@ -173,68 +200,64 @@
                         const contentDiv = document.createElement('div');
                         contentDiv.className = 'result-content';
 
-                        contentDiv.appendChild(valueElement);
+                        const paragraph = document.createElement('p');
+                        paragraph.textContent = content['content'];
+                        contentDiv.appendChild(paragraph);
 
                         itemDiv.appendChild(contentDiv);
                         container.appendChild(itemDiv);
+
+                        return container;
+                    } else {
+                        // 如果当前对象不包含 "content" 字段，继续递归
+                        for (let key in content) {
+                            if (content.hasOwnProperty(key)) {
+                                const value = content[key];
+                                const valueElement = formatContent(value, depth + 1, displayedFields, isWorldview);
+                                if (valueElement) {
+                                    container.appendChild(valueElement);
+                                }
+                            }
+                        }
+                        return container;
                     }
-                });
-                return container.childNodes.length > 0 ? container : null;
-            } else if (typeof content === 'object' && content !== null) {
-                const container = document.createElement('div');
-                let hasContent = false;
+                } else {
+                    for (let key in content) {
+                        if (content.hasOwnProperty(key)) {
+                            const value = content[key];
 
-                for (let key in content) {
-                    if (content.hasOwnProperty(key)) {
-                        const value = content[key];
+                            // 翻译键
+                            const translatedKey = keyTranslations[key] || key;
 
-                        // 翻译键
-                        const translatedKey = keyTranslations[key] || key;
+                            // 跳过忽略的字段
+                            if (ignoredFields.includes(key)) {
+                                continue;
+                            }
 
-                        // 跳过忽略的字段
-                        if (ignoredFields.includes(key)) {
-                            continue;
-                        }
+                            // 跳过空值或空对象
+                            if (
+                                value === null ||
+                                value === '' ||
+                                (typeof value === 'object' && Object.keys(value).length === 0)
+                            ) {
+                                continue;
+                            }
 
-                        // 跳过空值或空对象
-                        if (
-                            value === null ||
-                            value === '' ||
-                            (typeof value === 'object' && Object.keys(value).length === 0)
-                        ) {
-                            continue;
-                        }
+                            // 如果值是字符串且长度小于等于2，且不是顶层，则跳过显示
+                            if (depth > 0 && typeof value === 'string' && value.trim().length <= 2) {
+                                continue;
+                            }
 
-                        // 如果值是字符串且长度小于等于2，且不是顶层，则跳过显示
-                        if (depth > 0 && typeof value === 'string' && value.trim().length <= 2) {
-                            continue;
-                        }
+                            const uniqueKey = depth + '-' + key + '-' + JSON.stringify(value);
 
-                        // 计算内容长度，如果少于20个字符，则跳过
-                        let contentLength = 0;
-                        if (typeof value === 'string') {
-                            contentLength = value.length;
-                        } else if (typeof value === 'object') {
-                            contentLength = JSON.stringify(value).length;
-                        }
+                            // 跳过已显示的字段
+                            if (displayedFields.has(uniqueKey)) {
+                                continue;
+                            }
 
-                        if (contentLength < 20) {
-                            continue;
-                        }
+                            // 标记字段为已显示
+                            displayedFields.add(uniqueKey);
 
-                        const uniqueKey = depth + '-' + key + '-' + JSON.stringify(value);
-
-                        // 跳过已显示的字段
-                        if (displayedFields.has(uniqueKey)) {
-                            continue;
-                        }
-
-                        // 标记字段为已显示
-                        displayedFields.add(uniqueKey);
-
-                        const valueElement = formatContent(value, depth + 1, displayedFields);
-                        if (valueElement) {
-                            hasContent = true;
                             const itemDiv = document.createElement('div');
                             itemDiv.className = 'result-item';
 
@@ -248,21 +271,17 @@
                             const contentDiv = document.createElement('div');
                             contentDiv.className = 'result-content';
 
+                            const valueElement = formatContent(value, depth + 1, displayedFields, isWorldview);
                             contentDiv.appendChild(valueElement);
 
                             itemDiv.appendChild(contentDiv);
                             container.appendChild(itemDiv);
                         }
                     }
+                    return container;
                 }
-                return hasContent ? container : null;
             } else {
-                // 计算内容长度，如果少于20个字符，则跳过
-                if (typeof content === 'string' && content.length < 20) {
-                    return null;
-                }
                 const paragraph = document.createElement('p');
-                // 保持原始内容，包括换行符等
                 paragraph.textContent = content;
                 return paragraph;
             }
@@ -273,7 +292,7 @@
             reader.onload = function(e) {
                 try {
                     const json = JSON.parse(e.target.result);
-                    showResult(json);
+                    showResult(json, true); // 传递 isWorldview 参数为 true
                 } catch (error) {
                     showResult("错误：无效的 JSON 文件");
                     console.error(error); // 输出错误信息，方便调试
@@ -289,7 +308,7 @@
                 try {
                     const characterInfo = Png.Parse(buffer);
                     const json = JSON.parse(characterInfo);
-                    showResult(json);
+                    showResult(json); // 不传递 isWorldview 参数，默认为 false
                 } catch (error) {
                     showResult("错误：" + error.message);
                     console.error(error); // 输出错误信息，方便调试
