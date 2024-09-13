@@ -158,28 +158,31 @@
             if (Array.isArray(content)) {
                 const container = document.createElement('div');
                 content.forEach((item, index) => {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'result-item';
-
-                    const title = document.createElement('h2');
-                    title.textContent = `项目 ${index + 1}`;
-                    title.addEventListener('click', function() {
-                        contentDiv.classList.toggle('collapsed');
-                    });
-                    itemDiv.appendChild(title);
-
-                    const contentDiv = document.createElement('div');
-                    contentDiv.className = 'result-content';
-
                     const valueElement = formatContent(item, depth + 1, displayedFields);
-                    contentDiv.appendChild(valueElement);
+                    if (valueElement) {
+                        const itemDiv = document.createElement('div');
+                        itemDiv.className = 'result-item';
 
-                    itemDiv.appendChild(contentDiv);
-                    container.appendChild(itemDiv);
+                        const title = document.createElement('h2');
+                        title.textContent = `项目 ${index + 1}`;
+                        title.addEventListener('click', function() {
+                            contentDiv.classList.toggle('collapsed');
+                        });
+                        itemDiv.appendChild(title);
+
+                        const contentDiv = document.createElement('div');
+                        contentDiv.className = 'result-content';
+
+                        contentDiv.appendChild(valueElement);
+
+                        itemDiv.appendChild(contentDiv);
+                        container.appendChild(itemDiv);
+                    }
                 });
-                return container;
+                return container.childNodes.length > 0 ? container : null;
             } else if (typeof content === 'object' && content !== null) {
                 const container = document.createElement('div');
+                let hasContent = false;
 
                 for (let key in content) {
                     if (content.hasOwnProperty(key)) {
@@ -207,7 +210,19 @@
                             continue;
                         }
 
-                        const uniqueKey = depth + '-' + key + '-' + JSON.stringify(value); // 包含值，避免相同键不同值的情况
+                        // 计算内容长度，如果少于20个字符，则跳过
+                        let contentLength = 0;
+                        if (typeof value === 'string') {
+                            contentLength = value.length;
+                        } else if (typeof value === 'object') {
+                            contentLength = JSON.stringify(value).length;
+                        }
+
+                        if (contentLength < 20) {
+                            continue;
+                        }
+
+                        const uniqueKey = depth + '-' + key + '-' + JSON.stringify(value);
 
                         // 跳过已显示的字段
                         if (displayedFields.has(uniqueKey)) {
@@ -217,28 +232,35 @@
                         // 标记字段为已显示
                         displayedFields.add(uniqueKey);
 
-                        const itemDiv = document.createElement('div');
-                        itemDiv.className = 'result-item';
-
-                        const title = document.createElement('h2');
-                        title.textContent = translatedKey;
-                        title.addEventListener('click', function() {
-                            contentDiv.classList.toggle('collapsed');
-                        });
-                        itemDiv.appendChild(title);
-
-                        const contentDiv = document.createElement('div');
-                        contentDiv.className = 'result-content';
-
                         const valueElement = formatContent(value, depth + 1, displayedFields);
-                        contentDiv.appendChild(valueElement);
+                        if (valueElement) {
+                            hasContent = true;
+                            const itemDiv = document.createElement('div');
+                            itemDiv.className = 'result-item';
 
-                        itemDiv.appendChild(contentDiv);
-                        container.appendChild(itemDiv);
+                            const title = document.createElement('h2');
+                            title.textContent = translatedKey;
+                            title.addEventListener('click', function() {
+                                contentDiv.classList.toggle('collapsed');
+                            });
+                            itemDiv.appendChild(title);
+
+                            const contentDiv = document.createElement('div');
+                            contentDiv.className = 'result-content';
+
+                            contentDiv.appendChild(valueElement);
+
+                            itemDiv.appendChild(contentDiv);
+                            container.appendChild(itemDiv);
+                        }
                     }
                 }
-                return container;
+                return hasContent ? container : null;
             } else {
+                // 计算内容长度，如果少于20个字符，则跳过
+                if (typeof content === 'string' && content.length < 20) {
+                    return null;
+                }
                 const paragraph = document.createElement('p');
                 // 保持原始内容，包括换行符等
                 paragraph.textContent = content;
