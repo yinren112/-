@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>角色卡与世界观识别器</title>
     <style>
-        /* 样式代码保持不变 */
+        /* 样式代码保持不变，添加与复制按钮相关的样式 */
         body {
             font-family: '微软雅黑', sans-serif;
             background-color: #f0f2f5;
@@ -50,6 +50,7 @@
         }
         .result-item {
             margin-bottom: 10px;
+            position: relative; /* 为了定位复制按钮 */
         }
         .result-item h2 {
             color: #4CAF50;
@@ -58,6 +59,7 @@
             cursor: pointer;
             background-color: #f9f9f9;
             border: 1px solid #ddd;
+            position: relative;
         }
         .result-item h2:hover {
             background-color: #f1f1f1;
@@ -67,6 +69,7 @@
             border: 1px solid #ddd;
             border-top: none;
             display: block; /* 默认展开 */
+            position: relative;
         }
         .result-content.collapsed {
             display: none;
@@ -77,11 +80,32 @@
             white-space: pre-wrap;
             margin: 0;
         }
+        .copy-button {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .copy-button:hover {
+            background-color: #0b7dda;
+        }
         /* 响应式 */
         @media (max-width: 600px) {
             .button {
                 width: 100%;
                 margin: 10px 0;
+            }
+            .copy-button {
+                bottom: 5px;
+                right: 5px;
+                padding: 4px 8px;
+                font-size: 10px;
             }
         }
     </style>
@@ -184,7 +208,7 @@
             } else if (typeof content === 'object' && content !== null) {
                 const container = document.createElement('div');
 
-                // 在世界观识别中，如果只需要显示 "content" 字段的内容
+                // 在世界观识别中，如果只需要显示 "content" 字段的正文
                 if (isWorldview) {
                     if ('content' in content) {
                         const itemDiv = document.createElement('div');
@@ -203,6 +227,15 @@
                         const paragraph = document.createElement('p');
                         paragraph.textContent = content['content'];
                         contentDiv.appendChild(paragraph);
+
+                        // 添加复制按钮
+                        const copyButton = document.createElement('button');
+                        copyButton.className = 'copy-button';
+                        copyButton.textContent = '复制';
+                        copyButton.addEventListener('click', function() {
+                            copyToClipboard(content['content']);
+                        });
+                        contentDiv.appendChild(copyButton);
 
                         itemDiv.appendChild(contentDiv);
                         container.appendChild(itemDiv);
@@ -274,6 +307,22 @@
                             const valueElement = formatContent(value, depth + 1, displayedFields, isWorldview);
                             contentDiv.appendChild(valueElement);
 
+                            // 添加复制按钮
+                            const copyButton = document.createElement('button');
+                            copyButton.className = 'copy-button';
+                            copyButton.textContent = '复制';
+                            // 根据内容类型，确定要复制的文本
+                            let textToCopy = '';
+                            if (typeof value === 'string') {
+                                textToCopy = value;
+                            } else {
+                                textToCopy = getTextFromElement(valueElement);
+                            }
+                            copyButton.addEventListener('click', function() {
+                                copyToClipboard(textToCopy);
+                            });
+                            contentDiv.appendChild(copyButton);
+
                             itemDiv.appendChild(contentDiv);
                             container.appendChild(itemDiv);
                         }
@@ -285,6 +334,20 @@
                 paragraph.textContent = content;
                 return paragraph;
             }
+        }
+
+        function getTextFromElement(element) {
+            const tempDiv = document.createElement('div');
+            tempDiv.appendChild(element.cloneNode(true));
+            return tempDiv.innerText || tempDiv.textContent;
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                alert('已复制到剪贴板');
+            }, function(err) {
+                alert('复制失败：' + err);
+            });
         }
 
         function handleJsonFile(file) {
