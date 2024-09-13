@@ -208,8 +208,8 @@
             } else if (typeof content === 'object' && content !== null) {
                 const container = document.createElement('div');
 
-                // 在世界观识别中，如果只需要显示 "content" 字段的正文
                 if (isWorldview) {
+                    // 仅在识别世界观时，只显示 "content" 字段的内容
                     if ('content' in content) {
                         const itemDiv = document.createElement('div');
                         itemDiv.className = 'result-item';
@@ -255,6 +255,7 @@
                         return container;
                     }
                 } else {
+                    // 识别角色卡时，显示所有相关的字段
                     for (let key in content) {
                         if (content.hasOwnProperty(key)) {
                             const value = content[key];
